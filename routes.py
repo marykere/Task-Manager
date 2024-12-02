@@ -2,11 +2,32 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from models import db, User, Task
+from functools import wraps
+import jwt
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY']=''
+app.config['SECRET_KEY']= '2ab11bbecddded931cbc0ce4d9d9b13a'
 
+##adding user-specific permissions and features i.e. role-based access control
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"message":"Token is missing"}), 401
+        
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            current_user = User.query.filter_by(id=data['user_id']).first_or_404()
+        except jwt.ExpiredSignatureError:
+            return jsonify({"message": "Token is expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"message": "Invalid token"}), 401
+        
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
 @app.route('/')
 def home():
     return "<h1>Homepage!</h1>"
@@ -66,7 +87,35 @@ def create_task():
     
     return jsonify({"message": "Task created successfully"}), 201
 
-@app.route('/task', methods=['GET', 'POST'])
+@app.route('/tasks', methods=['GET'])
+@token_required
+def get_tasks(current_user):
+    tasks = Task.query.filter_by(user_id=current_user.id).all()
+    tasks_data = [{"id": task.id, "title": task.title, "description": task.description} for task in tasks]
+    return jsonify({"Tasks": tasks_data}), 200
+
+@app.route('/update_task', methods=['PUT', 'DELETE'])
+@token_required
+def update_task(current_user, task_id):
+    task = Task.query.filter_by(id=task.id, user_id=current_user.id).first_or_404()
+    if not task:
+        return jsonify({"message":"Task does not exist"}), 401
+    
+    if request.method == 'PUT':
+        task.title = request.json.get('title', task.title)
+        task.description = request.json.get('description', task.description)
+        db.session.commit()
+        
+        return jsonify ({"message": "Task succcessfully updated!"}), 200
+    
+    if request.method == 'DELETE':
+        db.session.delete(task)
+        db.session.commit()
+        return jsonify({"message":"Task successfully deleted!"}), 200
+        
+        
+
+@app.route('/task', methods=['GET', 'POST']) #should remove the GET method after adding user authentication
 def create_and_retrieve_task():
     if request.method == 'GET':
         task_id = request.args.get('task_id')
