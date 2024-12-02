@@ -4,10 +4,13 @@ from flask_migrate import Migrate
 from models import db, User, Task
 from functools import wraps
 import jwt
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY']= '2ab11bbecddded931cbc0ce4d9d9b13a'
+load_dotenv()
+app.config['SECRET_KEY']= os.getenv('SECRET_KEY')
 
 ##adding user-specific permissions and features i.e. role-based access control
 def token_required(f):
