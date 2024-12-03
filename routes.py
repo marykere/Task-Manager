@@ -86,7 +86,7 @@ def create_task():
     user_id = request.json.get('user_id')
     priority = request.json.get('priority', 'medium')
     
-    if priority not in dict(PRIORITY_CHOICES ).keys():
+    if priority not in dict(Task.PRIORITY_CHOICES ).keys():
         return jsonify({"message": "Invalid priority"}), 400
     
     task = Task(title=title, description=description, user_id=user_id)
@@ -94,6 +94,21 @@ def create_task():
     db.session.commit()
     
     return jsonify({"message": "Task created successfully"}), 201
+
+@app.route('task/<int:id>/set_deadline', method=['PATCH'])
+@token_required
+def set_deadline(current_user, id):
+    task=Task.query.filter_by(user_id=current_user.id, id=id).first_or_404()
+    if not task:
+        return jsonify({"message":"Task does not exist"}), 401
+    
+    task.title = request.json.get('title')
+    task.deadline = request.json.get('deadline')
+    
+    db.session.commit()
+    
+    return jsonify({"message":"Task deadline successfully updated"}), 200
+    
 
 @app.route('/tasks', methods=['GET'])
 @token_required
