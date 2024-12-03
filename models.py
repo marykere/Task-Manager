@@ -22,13 +22,20 @@ class User(db.Model):
     
 class Task(db.Model):
     __tablename__='tasks'
+    
+    PRIORITY_CHOICES=[('low', 'Low'), 
+                      ('medium', 'Medium'), 
+                      ('high', 'High'),
+                      ('urgent', 'Urgent')]
     id=db.Column(db.Integer, primary_key=True)
     title=db.Column(db.String(80), nullable=False)
     description=db.Column(db.String(250), nullable=False)
     user_id=db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
+    deadline=db.Column(db.DateTime, nullable=False)
+    priority=db.Column(db.ChoiceType(PRIORITY_CHOICES ), default='Medium')
     role=db.relationship('Role', backref='task', lazy=True)
     def __repr__(self):
-        return f"Task: {self.title}, Description: {self.description}, User: {self.user.username}"
+        return f"Task: {self.title}, Description: {self.description}, User: {self.user.username}, priority: {self.priority}, Deadline: {self.deadline}  "
     
 class Role(db.Model):
     __tablename__='roles'

@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from models import db, User, Task
+from models import db, User, Task, Role
 from functools import wraps
 import jwt
 from dotenv import load_dotenv
@@ -33,11 +33,11 @@ def token_required(f):
     return decorated
 @app.route('/')
 def home():
-    return "<h1>Homepage!</h1>"
+    return "<h1>Homepage!</h1>" #to adjust
 
 @app.route('/about')
 def about():
-    return "<h1>About page!</h1>"
+    return "<h1>About page!</h1>" #to adjust
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -79,10 +79,15 @@ def login():
     return jsonify({"message": "Logged in successfully"}), 200
 
 @app.route('/create_task', methods=['POST'])
+@token_required
 def create_task():
     title = request.json.get('title')
     description = request.json.get('description')
     user_id = request.json.get('user_id')
+    priority = request.json.get('priority', 'medium')
+    
+    if priority not in dict(PRIORITY_CHOICES ).keys():
+        return jsonify({"message": "Invalid priority"}), 400
     
     task = Task(title=title, description=description, user_id=user_id)
     db.session.add(task)
@@ -118,25 +123,25 @@ def update_task(current_user, task_id):
         
         
 
-@app.route('/task', methods=['GET', 'POST']) #should remove the GET method after adding user authentication
-def create_and_retrieve_task():
-    if request.method == 'GET':
-        task_id = request.args.get('task_id')
-        task = Task.query.get(task_id)
-        if not task:
-            return jsonify({"message": "Task not found"}), 404
-        return jsonify({"title": task.title, "description": task.description}), 200
+# @app.route('/task', methods=['GET', 'POST']) #should remove the GET method after adding user authentication
+# def create_and_retrieve_task():
+#     if request.method == 'GET':
+#         task_id = request.args.get('task_id')
+#         task = Task.query.get(task_id)
+#         if not task:
+#             return jsonify({"message": "Task not found"}), 404
+#         return jsonify({"title": task.title, "description": task.description}), 200
 
-    if request.method == 'POST':
-        title = request.json.get('title')
-        description = request.json.get('description')
-        user_id = request.json.get('user_id')
+#     if request.method == 'POST':
+#         title = request.json.get('title')
+#         description = request.json.get('description')
+#         user_id = request.json.get('user_id')
         
-        task = Task(title=title, description=description, user_id=user_id)
-        db.session.add(task)
-        db.session.commit()
+#         task = Task(title=title, description=description, user_id=user_id)
+#         db.session.add(task)
+#         db.session.commit()
         
-        return jsonify({"message": "Task created successfully"}), 201
+#         return jsonify({"message": "Task created successfully"}), 201
 
 
 
