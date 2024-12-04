@@ -6,8 +6,7 @@ from functools import wraps
 import jwt
 from dotenv import load_dotenv
 import os
-
-app = Flask(__name__)
+from app import app
 
 load_dotenv()
 app.config['SECRET_KEY']= os.getenv('SECRET_KEY')
@@ -95,7 +94,7 @@ def create_task():
     
     return jsonify({"message": "Task created successfully"}), 201
 
-@app.route('task/<int:id>/set_deadline', method=['PATCH'])
+@app.route('/task/<int:id>/set_deadline', method=['PATCH'])
 @token_required
 def set_deadline(current_user, id):
     task=Task.query.filter_by(user_id=current_user.id, id=id).first_or_404()

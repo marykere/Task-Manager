@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Config:
    SECRET_KEY = os.getenv('SECRET_KEY') #added a config for the secret_keys
@@ -11,7 +14,7 @@ class Config:
 
 class DevelopmentConfig(Config):
    DEBUG=True
-   SQLALCHEMY_DATABASE_URI = os.environ.get(
+   SQLALCHEMY_DATABASE_URI = os.getenv(
        "DEV_DATABASE_URL")
 
 class TestingConfig(Config):
