@@ -76,6 +76,48 @@ def login():
         return jsonify({"message": "Invalid email or password"}), 401
     
     return jsonify({"message": "Logged in successfully"}), 200
+@app.route('/create_roles', methods = ['POST'])
+@token_required
+def create_role(current_user):
+    if not current_user:
+        return jsonify({"message":"You are not authorized to perform this action"}), 401
+    name = request.json.get('name')
+    description = request.json.get('description')
+    task_id = request.json.get(task_id)
+
+    role = Role(name=name, description=description, task_id=task_id)
+    db.session.add(role)
+    db.session.commit()
+
+    return jsonify({"role": role.serialize()}, {"message":"Role successfully created!"}), 201
+
+@app.route('/roles', methods=['GET'])
+@token_required
+def get_roles(current_user):
+    roles=Role.query.filter_by(user_id=current_user.id).all()
+    if not roles:
+        return jsonify({"message":"No roles found"}), 200
+    return jsonify({"roles": [roles.serialize() for role in roles]}), 200
+
+@app.route('/update_role/<int:id>', methods=['PUT', 'DELETE'])
+@token_required
+def update_role(current_user, id):
+    role=Role.query.filter_by(user_id=current_user.id, id=id).first()
+    if not role:
+        return jsonify({"message":"Role does not exist!"}), 403
+    if request.method == 'PUT': #should use a variable & JSON here
+        role.name = request.json.get('name')
+        role.description = request.json.get('description')
+        role.task_id = request.json.get('task_id')
+        db.session.commit()
+        return jsonify({"message":"Role successfully updated!"}), 200
+    else:
+        db.session.delete(role)
+        db.session.commit()
+        return jsonify({"message":"Role successfully deleted!"}), 200
+    
+    return jsonify({"Role":role.serialize()}), 200
+
 
 @app.route('/create_task', methods=['POST'])
 @token_required
@@ -109,8 +151,7 @@ def set_deadline(current_user, id):
     
     return jsonify({"message":"Task deadline successfully updated"}), 200
 
-#to update new deadlines for a preset deadline task
-    
+#this route will allow authenticated users to fetch all tasks
 @app.route('/tasks', methods=['GET'])
 @token_required
 def get_tasks(current_user):
@@ -136,7 +177,7 @@ def get_tasks(current_user):
     }
     return jsonify({"Tasks": tasks_data}), 200
 
-@app.route('/task/<int:id>/update_task', methods=['PUT', 'DELETE']) #updating task name, description, deadlines, and delete functionality
+@app.route('/task/<int:id>/update_task', methods=['PUT', 'DELETE']) #updating & deleting functionality: task name, description, deadlines 
 @token_required
 def update_task(current_user, task_id):
     task = Task.query.filter_by(id=task.id, user_id=current_user.id).first_or_404()
@@ -155,6 +196,8 @@ def update_task(current_user, task_id):
         db.session.delete(task)
         db.session.commit()
         return jsonify({"message":"Task successfully deleted!"}), 200
+    
+
         
         
 
