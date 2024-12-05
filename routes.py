@@ -77,44 +77,6 @@ def login():
     
     return jsonify({"message": "Logged in successfully"}), 200
 
-@app.route('/tasks', methods=['GET'])
-@token_required
-def get_tasks(current_user):
-    # Get the page and per_page parameters from the query string
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
-
-    # Use SQLAlchemy's paginate method
-    tasks_paginated = Task.query.filter_by(user_id=current_user.id).paginate(page=page, per_page=per_page, error_out=False)
-
-    # Prepare the paginated data
-    tasks_data = [
-        {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "priority": task.priority,
-            "deadline": task.deadline,
-        }
-        for task in tasks_paginated.items
-    ]
-
-    # Create the response with pagination metadata
-    response = {
-        "tasks": tasks_data,
-        "pagination": {
-            "total": tasks_paginated.total,
-            "pages": tasks_paginated.pages,
-            "current_page": tasks_paginated.page,
-            "per_page": tasks_paginated.per_page,
-            "has_next": tasks_paginated.has_next,
-            "has_prev": tasks_paginated.has_prev,
-
-        },
-    }
-
-    return jsonify(response), 200
-
 @app.route('/create_task', methods=['POST'])
 @token_required
 def create_task():
@@ -127,7 +89,7 @@ def create_task():
     if priority not in dict(Task.PRIORITY_CHOICES ).keys():
         return jsonify({"message": "Invalid priority"}), 400
     
-    task = Task(title=title, description=description, user_id=user_id)
+    task = Task(title=title, description=description, deadline=deadline, user_id=user_id)
     db.session.add(task)
     db.session.commit()
     
@@ -169,8 +131,8 @@ def get_tasks(current_user):
             "current_page": tasks_paginated.page,
             "per_page": tasks_paginated.per_page,
             "has_next": tasks_paginated.has_next,
-            "has_prev": tasks_paginated.has_prev
-        }
+            "has_prev": tasks_paginated.has_prev,
+        },
     }
     return jsonify({"Tasks": tasks_data}), 200
 
